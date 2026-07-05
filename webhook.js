@@ -98,6 +98,20 @@ app.post('/simular-fraude', async (req, res) => {
   }
 });
 
+// ---------- Ruta de debug: ver el estado actual de los datos (solo para el hackathon) ----------
+app.get('/debug/logs', (req, res) => {
+  try {
+    const fs = require('fs');
+    const dataPath = path.join(__dirname, 'data');
+    const logs = JSON.parse(fs.readFileSync(path.join(dataPath, 'logs.json'), 'utf-8'));
+    const transactions = JSON.parse(fs.readFileSync(path.join(dataPath, 'transactions.json'), 'utf-8'));
+    const accounts = JSON.parse(fs.readFileSync(path.join(dataPath, 'accounts.json'), 'utf-8'));
+    res.json({ logs, transactions, accounts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`\nListening on port ${port}\n`);
