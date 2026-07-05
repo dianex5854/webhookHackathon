@@ -72,11 +72,26 @@ app.post('/simular-fraude', async (req, res) => {
     });
 
     // 2. Enviar la alerta por WhatsApp (plantilla aprobada por Meta)
-    await whatsapp.sendFraudAlertTemplate(phone, { amount, merchant });
+    //    Si la plantilla todavía no fue aprobada, esto va a fallar — pero la
+    //    transacción ya quedó creada, así que igual podés probar el agente
+    //    respondiendo manualmente desde WhatsApp ("Sí, fui yo" / "No, fue fraude").
+    let whatsappSent = true;
+    let whatsappError = null;
+    try {
+      await whatsapp.sendFraudAlertTemplate(phone, { amount, merchant });
+      console.log(`Alerta de fraude enviada a ${phone} — transacción ${transaction.transactionId}`);
+    } catch (err) {
+      whatsappSent = false;
+      whatsappError = err.message;
+      console.error('No se pudo enviar la plantilla de WhatsApp (¿todavía no está aprobada?):', err.message);
+    }
 
-    console.log(`Alerta de fraude enviada a ${phone} — transacción ${transaction.transactionId}`);
-
-    res.status(200).json({ success: true, transaction });
+    res.status(200).json({
+      success: true,
+      transaction,
+      whatsappSent,
+      whatsappError,
+    });
   } catch (err) {
     console.error('Error simulando fraude:', err);
     res.status(500).json({ error: err.message });

@@ -145,10 +145,18 @@
 
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
 
-      resultBox.className = 'success';
-      resultBox.textContent =
-        '✅ Alerta enviada.\nTransacción: ' + data.transaction.transactionId +
-        '\nRevisá el WhatsApp del cliente.';
+      if (data.whatsappSent) {
+        resultBox.className = 'success';
+        resultBox.textContent =
+          '✅ Alerta enviada.\nTransacción: ' + data.transaction.transactionId +
+          '\nRevisá el WhatsApp del cliente.';
+      } else {
+        resultBox.className = 'error';
+        resultBox.textContent =
+          '⚠️ Transacción creada (' + data.transaction.transactionId + '), pero el WhatsApp no se pudo enviar.\n' +
+          'Motivo: ' + data.whatsappError + '\n\n' +
+          'Probablemente la plantilla todavía no está aprobada. Podés simular la respuesta del cliente escribiéndole manualmente a tu número de WhatsApp desde ese número: "Sí, fui yo" o "No, fue fraude".';
+      }
     } catch (err) {
       resultBox.className = 'error';
       resultBox.textContent = '❌ Error: ' + err.message;
