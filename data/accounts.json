@@ -1,0 +1,17 @@
+{
+  "accounts": [
+    {
+      "accountId": "acc_001",
+      "clientName": "Juan Pérez",
+      "phone": "50688720640",
+      "cards": [
+        {
+          "cardId": "card_001",
+          "last4": "4242",
+          "type": "Débito",
+          "status": "active"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel de Fraude — Demo Hackathon</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #171a21;
+    --accent: #ff4d4f;
+    --accent-2: #2ecc71;
+    --text: #e8eaed;
+    --muted: #8b8f98;
+    --border: #262a33;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 440px;
+    width: 100%;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+  p.subtitle {
+    color: var(--muted);
+    margin: 0 0 24px;
+    font-size: 14px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0c0e12;
+    color: var(--text);
+    font-size: 14px;
+  }
+  button {
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #result {
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #result.success {
+    display: block;
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid var(--accent-2);
+    color: var(--accent-2);
+  }
+  #result.error {
+    display: block;
+    background: rgba(255, 77, 79, 0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔒 Panel del Banco — Simulador</h1>
+    <p class="subtitle">Dispará una transacción sospechosa y mandá la alerta por WhatsApp.</p>
+
+    <label for="phone">Teléfono del cliente (con código de país)</label>
+    <input id="phone" type="text" value="50688720640" />
+
+    <label for="amount">Monto</label>
+    <input id="amount" type="text" value="$450.000" />
+
+    <label for="merchant">Comercio</label>
+    <input id="merchant" type="text" value="Casino Online XYZ" />
+
+    <label for="location">Ubicación (opcional)</label>
+    <input id="location" type="text" value="Moscú, Rusia" />
+
+    <button id="triggerBtn">Simular transacción sospechosa</button>
+
+    <div id="result"></div>
+  </div>
+
+<script>
+  const btn = document.getElementById('triggerBtn');
+  const resultBox = document.getElementById('result');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    resultBox.className = '';
+    resultBox.textContent = '';
+
+    const payload = {
+      phone: document.getElementById('phone').value.trim(),
+      amount: document.getElementById('amount').value.trim(),
+      merchant: document.getElementById('merchant').value.trim(),
+      location: document.getElementById('location').value.trim(),
+    };
+
+    try {
+      const res = await fetch('/simular-fraude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+      resultBox.className = 'success';
+      resultBox.textContent =
+        '✅ Alerta enviada.\nTransacción: ' + data.transaction.transactionId +
+        '\nRevisá el WhatsApp del cliente.';
+    } catch (err) {
+      resultBox.className = 'error';
+      resultBox.textContent = '❌ Error: ' + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Simular transacción sospechosa';
+    }
+  });
+</script>
+</body>
+</html>
