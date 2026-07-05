@@ -113,6 +113,32 @@ function isSuspicious(transaction) {
   );
 }
 
+function recordMerchantAsKnown(accountId, merchant) {
+  const data = readJSON(ACCOUNTS_PATH);
+  const account = data.accounts.find((acc) => acc.accountId === accountId);
+  if (!account) return null;
+
+  if (!account.knownMerchants) account.knownMerchants = [];
+  if (!account.knownMerchants.includes(merchant)) {
+    account.knownMerchants.push(merchant);
+  }
+
+  writeJSON(ACCOUNTS_PATH, data);
+  return account.knownMerchants;
+}
+
+function openClaim(transactionId) {
+  const data = readJSON(TRANSACTIONS_PATH);
+  const txn = data.transactions.find((t) => t.transactionId === transactionId);
+  if (!txn) return null;
+
+  txn.status = 'blocked';
+  txn.claimOpened = true;
+  txn.claimOpenedAt = new Date().toISOString();
+  writeJSON(TRANSACTIONS_PATH, data);
+  return txn;
+}
+
 module.exports = {
   getAccountByPhone,
   getCardById,
@@ -124,4 +150,6 @@ module.exports = {
   blockCard,
   markTransactionAsFraud,
   isSuspicious,
+  recordMerchantAsKnown,
+  openClaim,
 };

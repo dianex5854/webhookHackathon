@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const banking = require('./tools/banking');
 const whatsapp = require('./tools/whatsapp');
+const agent = require('./agent');
 
 // Create an Express app
 const app = express();
@@ -38,8 +39,11 @@ app.post('/', (req, res) => {
   console.log(JSON.stringify(req.body, null, 2));
   res.status(200).end();
 
-  // TODO: acá va a enganchar src/agent.js para interpretar la respuesta del cliente
-  // (no bloqueante — responder 200 a Meta antes de procesar, como ya está hecho arriba)
+  // Procesamiento asíncrono: respondemos 200 a Meta primero (arriba) para evitar
+  // timeouts, y recién después el agente interpreta el mensaje y actúa.
+  agent.processIncomingMessage(req.body).catch((err) => {
+    console.error('Error procesando mensaje con el agente:', err);
+  });
 });
 
 // ---------- Ruta para el dashboard: simular transacción sospechosa ----------
