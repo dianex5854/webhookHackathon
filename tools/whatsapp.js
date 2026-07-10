@@ -1,9 +1,9 @@
 // tools/whatsapp.js
 // Envío de mensajes vía WhatsApp Cloud API.
 
-const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const API_VERSION = 'v21.0';
+const config = require('../config');
+
+const { phoneNumberId: PHONE_NUMBER_ID, accessToken: ACCESS_TOKEN, apiVersion: API_VERSION } = config.whatsapp;
 
 async function sendRequest(body) {
   const url = `https://graph.facebook.com/${API_VERSION}/${PHONE_NUMBER_ID}/messages`;
