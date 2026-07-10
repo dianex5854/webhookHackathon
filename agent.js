@@ -3,15 +3,16 @@
 // y decide qué acción tomar (autorizar transacción o bloquear tarjeta).
 
 const Anthropic = require('@anthropic-ai/sdk');
+const config = require('./config');
 const banking = require('./tools/banking');
 const whatsapp = require('./tools/whatsapp');
 const logger = require('./tools/logger');
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: config.anthropic.apiKey,
 });
 
-const MODEL = 'claude-sonnet-5';
+const MODEL = config.anthropic.model;
 
 // ---------- Herramientas que el agente puede ejecutar ----------
 
