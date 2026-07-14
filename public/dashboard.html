@@ -145,15 +145,23 @@
 
       if (!res.ok) throw new Error(data.error || 'Error desconocido');
 
-      if (data.whatsappSent) {
+      const severityLabel = data.severity ? data.severity.toUpperCase() : 'N/A';
+
+      if (data.severity === 'alta') {
         resultBox.className = 'success';
         resultBox.textContent =
-          '✅ Alerta enviada.\nTransacción: ' + data.transaction.transactionId +
+          '🚨 Severidad ALTA.\nTransacción: ' + data.transaction.transactionId +
+          '\nReclamo N°: ' + data.claimNumber +
+          '\n(No se envía WhatsApp — el trámite se gestiona dentro de la app del banco)';
+      } else if (data.whatsappSent) {
+        resultBox.className = 'success';
+        resultBox.textContent =
+          '✅ Severidad ' + severityLabel + '. Alerta enviada.\nTransacción: ' + data.transaction.transactionId +
           '\nRevisá el WhatsApp del cliente.';
       } else {
         resultBox.className = 'error';
         resultBox.textContent =
-          '⚠️ Transacción creada (' + data.transaction.transactionId + '), pero el WhatsApp no se pudo enviar.\n' +
+          '⚠️ Severidad ' + severityLabel + '. Transacción creada (' + data.transaction.transactionId + '), pero el WhatsApp no se pudo enviar.\n' +
           'Motivo: ' + data.whatsappError + '\n\n' +
           'Probablemente la plantilla todavía no está aprobada. Podés simular la respuesta del cliente escribiéndole manualmente a tu número de WhatsApp desde ese número: "Sí, fui yo" o "No, fue fraude".';
       }
