@@ -36,7 +36,8 @@ router.get('/debug/logs', (req, res) => {
     const logs = JSON.parse(fs.readFileSync(path.join(dataPath, 'logs.json'), 'utf-8'));
     const transactions = JSON.parse(fs.readFileSync(path.join(dataPath, 'transactions.json'), 'utf-8'));
     const accounts = JSON.parse(fs.readFileSync(path.join(dataPath, 'accounts.json'), 'utf-8'));
-    res.json({ logs, transactions, accounts });
+    const claims = JSON.parse(fs.readFileSync(path.join(dataPath, 'claims.json'), 'utf-8'));
+    res.json({ logs, transactions, accounts, claims });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

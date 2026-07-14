@@ -7,6 +7,7 @@ const path = require('path');
 
 const ACCOUNTS_PATH = path.join(__dirname, '..', 'data', 'accounts.json');
 const TRANSACTIONS_PATH = path.join(__dirname, '..', 'data', 'transactions.json');
+const CLAIMS_PATH = path.join(__dirname, '..', 'data', 'claims.json');
 
 // ---------- Helpers internos de lectura/escritura ----------
 
@@ -139,17 +140,70 @@ function openClaim(transactionId) {
   return txn;
 }
 
+function getTransactionHistoryByAccount(accountId, { excludeTransactionId, limit = 10 } = {}) {
+  const { transactions } = readJSON(TRANSACTIONS_PATH);
+  return transactions
+    .filter((t) => t.accountId === accountId && t.transactionId !== excludeTransactionId)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, limit);
+}
+
+function updateTransactionSeverity(transactionId, { severity, reasoning }) {
+  const data = readJSON(TRANSACTIONS_PATH);
+  const txn = data.transactions.find((t) => t.transactionId === transactionId);
+  if (!txn) return null;
+  txn.severity = severity; // 'alta' | 'media' | 'baja'
+  txn.severityReasoning = reasoning;
+  writeJSON(TRANSACTIONS_PATH, data);
+  return txn;
+}
+
+// Reclamo formal para transacciones de severidad ALTA — genera un número de
+// reclamo y lo guarda en data/claims.json, además de vincularlo a la transacción.
+function createFormalClaim(transaction) {
+  const claimsData = readJSON(CLAIMS_PATH);
+
+  const claim = {
+    claimNumber: `RCL-${Date.now()}`,
+    transactionId: transaction.transactionId,
+    accountId: transaction.accountId,
+    amount: transaction.amount,
+    merchant: transaction.merchant,
+    transactionDate: transaction.createdAt,
+    status: 'opened',
+    createdAt: new Date().toISOString(),
+  };
+
+  claimsData.claims.push(claim);
+  writeJSON(CLAIMS_PATH, claimsData);
+
+  // Vincular el reclamo a la transacción
+  const txnData = readJSON(TRANSACTIONS_PATH);
+  const txn = txnData.transactions.find((t) => t.transactionId === transaction.transactionId);
+  if (txn) {
+    txn.status = 'blocked';
+    txn.claimNumber = claim.claimNumber;
+    txn.claimOpenedAt = claim.createdAt;
+    writeJSON(TRANSACTIONS_PATH, txnData);
+  }
+
+  return claim;
+}
+
 module.exports = {
   getAccountByPhone,
   getCardById,
   createTransaction,
   getTransactionById,
   getLatestTransactionByPhone,
+  getTransactionHistoryByAccount,
   updateTransactionStatus,
+  updateTransactionSeverity,
   authorizeTransaction,
   blockCard,
   markTransactionAsFraud,
   isSuspicious,
   recordMerchantAsKnown,
   openClaim,
+  createFormalClaim,
 };
