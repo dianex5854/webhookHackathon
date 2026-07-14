@@ -5,6 +5,8 @@
 
 const banking = require('../tools/banking');
 const whatsapp = require('../tools/whatsapp');
+const claimsApi = require('../tools/claimsApi');
+const riskClassifier = require('../riskClassifier');
 
 async function simulateFraudAlert({ phone, amount, merchant, location }) {
   if (!phone || !amount || !merchant) {
@@ -31,22 +33,54 @@ async function simulateFraudAlert({ phone, amount, merchant, location }) {
     location,
   });
 
-  // 2. Enviar la alerta por WhatsApp (plantilla aprobada por Meta)
-  //    Si la plantilla todavía no fue aprobada, esto puede fallar — pero la
-  //    transacción ya quedó creada, así que igual se puede probar el agente
-  //    respondiendo manualmente desde WhatsApp.
-  let whatsappSent = true;
+  // 2. Clasificar la severidad (alta / media / baja) en base al historial del cliente.
+  //    TODO: los criterios exactos de negocio todavía no están definidos —
+  //    por ahora riskClassifier.js usa criterios genéricos (ver ese archivo).
+  const { severity, reasoning } = await riskClassifier.classifySeverity(transaction);
+  banking.updateTransactionSeverity(transaction.transactionId, { severity, reasoning });
+  console.log(`Severidad clasificada: ${severity.toUpperCase()} — ${reasoning}`);
+
+  let whatsappSent = null; // null = no aplica (severidad alta no manda WhatsApp)
   let whatsappError = null;
-  try {
-    await whatsapp.sendFraudAlertTemplate(phone, { amount, merchant });
-    console.log(`Alerta de fraude enviada a ${phone} — transacción ${transaction.transactionId}`);
-  } catch (err) {
-    whatsappSent = false;
-    whatsappError = err.message;
-    console.error('No se pudo enviar la plantilla de WhatsApp (¿todavía no está aprobada?):', err.message);
+  let claimNumber = null;
+
+  if (severity === 'alta') {
+    // 3a. Severidad alta: se abre un reclamo formal. Todo el resto del
+    //     proceso (avisar al cliente, indicarle el número de reclamo y a
+    //     quién llamar) pasa dentro de la app del banco, no por WhatsApp.
+    try {
+      const result = await claimsApi.openUrgentClaim({ transaction });
+      claimNumber = result.claimNumber;
+    } catch (err) {
+      console.error('Error abriendo el reclamo urgente:', err.message);
+    }
+  } else {
+    // 3b. Severidad media/baja: sigue el flujo actual — plantilla con botones por WhatsApp.
+    const dateTime = new Date(transaction.createdAt).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    try {
+      await whatsapp.sendFraudAlertTemplate(phone, { amount, merchant, dateTime });
+      console.log(`Alerta de fraude enviada a ${phone} — transacción ${transaction.transactionId}`);
+      whatsappSent = true;
+    } catch (err) {
+      whatsappSent = false;
+      whatsappError = err.message;
+      console.error('No se pudo enviar la plantilla de WhatsApp (¿todavía no está aprobada?):', err.message);
+    }
   }
 
-  return { transaction, whatsappSent, whatsappError };
+  return {
+    transaction: { ...transaction, severity, severityReasoning: reasoning },
+    severity,
+    whatsappSent,
+    whatsappError,
+    claimNumber,
+  };
 }
 
 module.exports = { simulateFraudAlert };

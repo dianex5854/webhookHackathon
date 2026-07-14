@@ -24,19 +24,25 @@ async function sendRequest(body) {
 }
 
 // Envía la plantilla de alerta de fraude (requiere que ya esté APROBADA por Meta)
-async function sendFraudAlertTemplate(toPhone, { amount, merchant }) {
+//
+// NOTA: el nombre real de la plantilla en Meta tiene un guión bajo al final
+// ("alerta_fraude_transaccion_") — no es un typo, así quedó guardada al crearla.
+// Además la plantilla real tiene 3 variables en el body (monto, fecha y hora,
+// comercio), no 2 — hay que mandar los 3 parámetros en ese orden exacto.
+async function sendFraudAlertTemplate(toPhone, { amount, merchant, dateTime }) {
   const body = {
     messaging_product: 'whatsapp',
     to: toPhone,
     type: 'template',
     template: {
-      name: 'alerta_fraude_transaccion',
+      name: 'alerta_fraude_transaccion_',
       language: { code: 'es' },
       components: [
         {
           type: 'body',
           parameters: [
             { type: 'text', text: String(amount) },
+            { type: 'text', text: dateTime },
             { type: 'text', text: merchant },
           ],
         },
